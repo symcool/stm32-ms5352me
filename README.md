@@ -1,2 +1,72 @@
-# stm32-ms5352me
-MS5352ME → Si5351A-compatible clock driver: CLK0 fractional DIV0 + CLK1/2 fixed /2, STM32 software I2C
+# MS5352ME 时钟发生器驱动（软件 I2C）
+
+MS5352ME（Si5351A 兼容）三路时钟发生器驱动，基于 STM32 HAL + 软件 I2C。
+驱动按硬件规格自动分配 PLL 与分频器，越界频率静默钳位，`void` 接口无返回值。
+
+## 芯片规格（对照 appnote 频率规划）
+
+| 项目 | 规格 |
+|---|---|
+| 晶振 | 25MHz 有源晶振（`MS5352ME_XTAL_FREQ`） |
+| VCO 范围 | 硬范围 500 ~ 1000MHz；推荐 600 ~ 900MHz |
+| CLK0 | 2.5kHz ~ 200MHz（DIV0 小数分频器） |
+| CLK1/CLK2 | 2MHz ~ 500MHz（DIV1/DIV2 **固定 /2** 分频器） |
+| DIV0 分频比 | 仅 {4,6,8} 或 [8,1800] |
+| >150MHz | 强制 DIVBY4 + INT=1 |
+| >120MHz | 仅允许同时输出 2 路不同时钟 |
+
+> **与 MS5351 的本质区别**：MS5352ME 的 DIV1/DIV2 是**固定 /2 整数分频器**（非小数分频器），
+> 因此 CLK1/CLK2 只能输出 ≥2MHz，且共享 PLL 时**必须同频**（见下方组合限制）。
+
+## 文件说明
+
+| 文件 | 作用 |
+|---|---|
+| `Src/ms5352me.c` / `Inc/ms5352me.h` | 驱动主体（频率计算 + PLL/DIV 分配 + 寄存器写入） |
+| `Src/i2c.c` / `Inc/i2c.h` | 软件 I2C 底层（写 `my_I2C_sendREG`、读 `my_I2C2_Read_REG`） |
+
+依赖的外部头文件：`sys.h`（HAL/类型）、`rf.h`（引脚宏 `SDA1_*`/`SCL1_*`）、`delay.h`（`Delay_us`）。
+
+## 快速开始
+
+```c
+#include "ms5352me.h"
+
+int main(void) {
+    ms5352me_Init();                                    // 初始化（输出全部关闭）
+    // 三路频率配置：ms5352me_Set(f0,d0, f1,d1, f2,d2)
+    ms5352me_Set(57600000, 1,   10000000, 1,   10000000, 1);  // 57.6M / 10M / 10M
+    // d = 1/2/3/4 对应驱动电流 2/4/6/8 mA（D1:0 编码）
+}
+```
+
+- `freq`：期望频率（Hz），越界自动钳位，**不会报错、照常配置出波**
+  - CLK0：>200MHz → 钳到 200MHz
+  - CLK1/CLK2：<2MHz → 钳到 2MHz；>500MHz → 钳到 500MHz
+- `drive`：驱动强度档位 1~4（`0` = 该路关闭）；`freq=0` 该路也视为关闭
+- 配置后 PLL 需要重新锁定，建议等待 ≥10ms 再量波
+
+## PLL 分配规则
+
+```
+CLK0 -> PLLA
+CLK1 -> CLK0 在场 ? PLLB : PLLA
+CLK2 -> CLK0 在场 ? PLLB : (CLK1 在场 ? PLLB : PLLA)
+```
+
+## 组合限制（重要）
+
+- **Case B（CLK0 关闭）**：CLK1/CLK2 各占独立 PLL，可输出**任意两个不同频率**（2MHz~500MHz 互不干扰）。
+- **Case A（CLK0 在场）**：CLK1/CLK2 共享 PLLB；因 DIV1/DIV2 固定 /2 而**必然同频**，驱动自动**强制 CLK1/CLK2 共用一个频率**：
+  - 二者中存在有效频率（2MHz~500MHz）→ 取该频率（优先 CLK1）；
+  - 二者都无效 → 取 CLK1 所接近的边界（2MHz 或 500MHz）。
+  - 保证一定出波，无需调用方处理。
+
+## 底层说明
+
+- `ms5352me_Init` 会写 Reg187=0x00（关闭 MS/XO 扇出）：CLK1/CLK2 已强制走各自专属的 DIV1/DIV2，绝不再共享 DIV0 扇出路径（该路径在 Si5351A 兼容芯片上实测无法稳定出波）。
+- Reg183 晶振负载电容写 `0xC0|0x12`（10pF + 固定位 010010b）；有源晶振场景下负载电容无实际作用，仅保留合规位。
+
+## 测试方案
+
+`MS5352ME_组合测试方案.md`（44 场景，寄存器期望值由与 C 等价的 Python 模型实时计算），覆盖单路/双路/三路、Case A 强制同频、越界钳位、驱动强度等。
