@@ -1,5 +1,7 @@
 # MS5352ME 时钟发生器驱动（软件 I2C）
 
+<img width="1169" height="809" alt="image" src="https://github.com/user-attachments/assets/4542635b-1535-43af-8403-cd8e728d7239" />
+
 MS5352ME（Si5351A 兼容）三路时钟发生器驱动，基于 STM32 HAL + 软件 I2C。
 驱动按硬件规格自动分配 PLL 与分频器，越界频率静默钳位，`void` 接口无返回值。
 
