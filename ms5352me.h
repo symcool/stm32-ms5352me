@@ -4,7 +4,7 @@
 #include "i2c.h"
 #include "sys.h"
 
-/* ---------------- ¹«¹²ÀàĞÍ ---------------- */
+/* ---------------- å…¬å…±ç±»å‹ ---------------- */
 typedef enum {
     ms5352me_PLL_A = 0,
     ms5352me_PLL_B,
@@ -27,7 +27,7 @@ typedef struct {
     int32_t denom;
 } ms5352PLLConfig_t;
 
-/* ---------------- ¼Ä´æÆ÷¶¨Òå ---------------- */
+/* ---------------- å¯„å­˜å™¨å®šä¹‰ ---------------- */
 enum {
     ms5352me_REGISTER_0_DEVICE_STATUS       = 0,
     ms5352me_REGISTER_3_OUTPUT_ENABLE       = 3,
@@ -38,11 +38,11 @@ enum {
     ms5352me_REGISTER_26_PLLA_PARAMETERS    = 26,
     ms5352me_REGISTER_34_PLLB_PARAMETERS    = 34,
     ms5352me_REGISTER_42_DIV0_PARAMETERS    = 42,
-    ms5352me_REGISTER_44_CLK0_RDIV          = 44,   /* CLK0 Êä³ö¼¶·ÖÆµ OUT0_DIV (R0_DIV) */
+    ms5352me_REGISTER_44_CLK0_RDIV          = 44,   /* CLK0 è¾“å‡ºçº§åˆ†é¢‘ OUT0_DIV (R0_DIV) */
     ms5352me_REGISTER_50_DIV1_PARAMETERS    = 50,
-    ms5352me_REGISTER_52_CLK1_RDIV          = 52,   /* CLK1 Êä³ö¼¶·ÖÆµ OUT1_DIV (R1_DIV) */
+    ms5352me_REGISTER_52_CLK1_RDIV          = 52,   /* CLK1 è¾“å‡ºçº§åˆ†é¢‘ OUT1_DIV (R1_DIV) */
     ms5352me_REGISTER_58_DIV2_PARAMETERS    = 58,
-    ms5352me_REGISTER_60_CLK2_RDIV          = 60,   /* CLK2 Êä³ö¼¶·ÖÆµ OUT2_DIV (R2_DIV) */
+    ms5352me_REGISTER_60_CLK2_RDIV          = 60,   /* CLK2 è¾“å‡ºçº§åˆ†é¢‘ OUT2_DIV (R2_DIV) */
     ms5352me_REGISTER_165_CLK0_PHASE        = 165,
     ms5352me_REGISTER_166_CLK1_PHASE        = 166,
     ms5352me_REGISTER_167_CLK2_PHASE        = 167,
@@ -51,48 +51,51 @@ enum {
     ms5352me_REGISTER_187_FANOUT            = 187
 };
 
-#define MS5352ME_XTAL_FREQ       25000000    // 25MHz ÓĞÔ´¾§Õñ
-#define MS5352ME_MAX_FREQ_CLK0   200000000   // CLK0 ×î´óÆµÂÊ 200MHz
-#define MS5352ME_MAX_FREQ_CLK12  500000000   // CLK1/CLK2 ×î´óÆµÂÊ 500MHz
+#define MS5352ME_XTAL_FREQ       25000000    // 25MHz æœ‰æºæ™¶æŒ¯
+#define MS5352ME_MIN_FREQ_CLK0   8000        // CLK0 ç®—æ³•å¯ç²¾ç¡®è¦†ç›–çš„ä¸‹é™ 8kHzï¼ˆä½äºåˆ™é’³ä½ï¼‰
+#define MS5352ME_MAX_FREQ_CLK0   200000000   // CLK0 æœ€å¤§é¢‘ç‡ 200MHz
+#define MS5352ME_MAX_FREQ_CLK12  500000000   // CLK1/CLK2 æœ€å¤§é¢‘ç‡ 500MHz
 
-#define MS5352ME_DIV0 0   // Î¨Ò»µÄĞ¡Êı·ÖÆµÆ÷£¨CLK0 ×¨Êô£©£¬2.5kHz~200MHz
-#define MS5352ME_DIV1 1   // ¹Ì¶¨ /2 ÕûÊı·ÖÆµÆ÷£¨CLK1 ×¨Êô£©£¬2MHz~500MHz
-#define MS5352ME_DIV2 2   // ¹Ì¶¨ /2 ÕûÊı·ÖÆµÆ÷£¨CLK2 ×¨Êô£©£¬2MHz~500MHz
+#define MS5352ME_DIV0 0   // å”¯ä¸€çš„å°æ•°åˆ†é¢‘å™¨ï¼ˆCLK0 ä¸“å±ï¼‰ï¼Œ8kHz~200MHz
+#define MS5352ME_DIV1 1   // å›ºå®š /2 æ•´æ•°åˆ†é¢‘å™¨ï¼ˆCLK1 ä¸“å±ï¼‰ï¼Œ2MHz~500MHz
+#define MS5352ME_DIV2 2   // å›ºå®š /2 æ•´æ•°åˆ†é¢‘å™¨ï¼ˆCLK2 ä¸“å±ï¼‰ï¼Œ2MHz~500MHz
 
 /* ============================================================
-   MS5352ME ÆµÂÊ·¶Î§Óë×éºÏÏŞÖÆ£¨¶ÔÕÕ appnote.txt L166/L199/L211/L245/L261£©
+   MS5352ME é¢‘ç‡èŒƒå›´ä¸ç»„åˆé™åˆ¶ï¼ˆå¯¹ç…§ appnote.txt L166/L199/L211/L245/L261ï¼‰
    ------------------------------------------------------------
-   ¡¾Ã¿Â··¶Î§¡¿(ms5352me_SetFrequencies Èë²Î£¬Ô½½ç×Ô¶¯¾²Ä¬Ç¯Î»£¬²»±¨´í)
-     CLK0 : 2.5kHz ~ 200MHz£¨DIV0 Ğ¡Êı·ÖÆµÆ÷£©  -> >200MHz Ç¯Î»µ½ 200MHz
-     CLK1 : 2MHz ~ 500MHz£¨DIV1 ¹Ì¶¨ /2£©       -> <2M Ç¯ 2M / >500M Ç¯ 500M
-     CLK2 : 2MHz ~ 500MHz£¨DIV2 ¹Ì¶¨ /2£©       -> <2M Ç¯ 2M / >500M Ç¯ 500M
+   ã€æ¯è·¯èŒƒå›´ã€‘(ms5352me_SetFrequencies å…¥å‚ï¼Œè¶Šç•Œè‡ªåŠ¨é™é»˜é’³ä½ï¼Œä¸æŠ¥é”™)
+     CLK0 : 8kHz ~ 200MHzï¼ˆDIV0 å°æ•°åˆ†é¢‘å™¨ï¼‰   -> <8k é’³ 8k / >200M é’³ 200M
+     CLK1 : 2MHz ~ 500MHzï¼ˆDIV1 å›ºå®š /2ï¼‰       -> <2M é’³ 2M / >500M é’³ 500M
+     CLK2 : 2MHz ~ 500MHzï¼ˆDIV2 å›ºå®š /2ï¼‰       -> <2M é’³ 2M / >500M é’³ 500M
+     ï¼ˆæ³¨ï¼šèŠ¯ç‰‡æ‰‹å†Œ CLK0 å®£ç§° 2.5kHz èµ·ç‚¹ï¼Œä½†é©±åŠ¨æ”¾å¤§ç®—æ³•ï¼ˆ2^n, n<=7ï¼‰å—
+      DIV0 åˆ†é¢‘æ¯” <=1800 çº¦æŸï¼Œå®é™…å¯ç²¾ç¡®è¦†ç›–ä¸‹é™ 8kHzï¼Œä¸ MS5351M ä¸€è‡´ï¼‰
 
-   ¡¾ÄÚ²¿Ó²Ô¼Êø¡¿
-     VCO         : Ó²·¶Î§ 500 ~ 1000MHz£»ÍÆ¼ö 600 ~ 900MHz£¨PLL_DIV 24~36 @25MHz£©
-     DIV0 ·ÖÆµ±È : ½ö {4,6,8} »ò [8,1800]
-     DIV1/DIV2   : Ö»ÄÜ¹Ì¶¨ 2 ·ÖÆµ£¨appnote L211£¬·ÇĞ¡Êı·ÖÆµÆ÷£©
-     >150MHz     : Ç¿ÖÆ DIVBY4 + INT=1
-     >120MHz     : ½öÔÊĞíÍ¬Ê±Êä³ö 2 Â·²»Í¬Ê±ÖÓ
+   ã€å†…éƒ¨ç¡¬çº¦æŸã€‘
+     VCO         : ç¡¬èŒƒå›´ 500 ~ 1000MHzï¼›æ¨è 600 ~ 900MHzï¼ˆPLL_DIV 24~36 @25MHzï¼‰
+     DIV0 åˆ†é¢‘æ¯” : ä»… {4,6,8} æˆ– [8,1800]
+     DIV1/DIV2   : åªèƒ½å›ºå®š 2 åˆ†é¢‘ï¼ˆappnote L211ï¼Œéå°æ•°åˆ†é¢‘å™¨ï¼‰
+     >150MHz     : å¼ºåˆ¶ DIVBY4 + INT=1
+     >120MHz     : ä»…å…è®¸åŒæ—¶è¾“å‡º 2 è·¯ä¸åŒæ—¶é’Ÿ
 
-   ¡¾PLL ·ÖÅä¡¿
+   ã€PLL åˆ†é…ã€‘
      CLK0 -> PLLA
-     CLK1 -> CLK0 ÔÚ³¡ ? PLLB : PLLA
-     CLK2 -> CLK0 ÔÚ³¡ ? PLLB : (CLK1 ÔÚ³¡ ? PLLB : PLLA)
+     CLK1 -> CLK0 åœ¨åœº ? PLLB : PLLA
+     CLK2 -> CLK0 åœ¨åœº ? PLLB : (CLK1 åœ¨åœº ? PLLB : PLLA)
 
-   ¡¾×éºÏÏŞÖÆ¡¿
-     Case B£¨CLK0 ¹Ø±Õ£©: CLK1/CLK2 ¸÷Õ¼¶ÀÁ¢ PLL£¬¿ÉÈÎÒâÒìÆµ£¨2M~500M£©
-     Case A£¨CLK0 ÔÚ³¡£©: CLK1/CLK2 ¹²Ïí PLLB£»Òò DIV1/2 ¹Ì¶¨ /2 ±ØÍ¬Æµ£¬
-       Çı¶¯Ç¿ÖÆ CLK1/CLK2 ¹²ÓÃÒ»¸öÆµÂÊ£¨È¡ÓĞĞ§ÆµÂÊÓÅÏÈ CLK1£»¶¼ÎŞĞ§È¡ CLK1 ×î½ü±ß½ç 2M/500M£©
+   ã€ç»„åˆé™åˆ¶ã€‘
+     Case Bï¼ˆCLK0 å…³é—­ï¼‰: CLK1/CLK2 å„å ç‹¬ç«‹ PLLï¼Œå¯ä»»æ„å¼‚é¢‘ï¼ˆ2M~500Mï¼‰
+     Case Aï¼ˆCLK0 åœ¨åœºï¼‰: CLK1/CLK2 å…±äº« PLLBï¼›å›  DIV1/2 å›ºå®š /2 å¿…åŒé¢‘ï¼Œ
+       é©±åŠ¨å¼ºåˆ¶ CLK1/CLK2 å…±ç”¨ä¸€ä¸ªé¢‘ç‡ï¼ˆå–æœ‰æ•ˆé¢‘ç‡ä¼˜å…ˆ CLK1ï¼›éƒ½æ— æ•ˆå– CLK1 æœ€è¿‘è¾¹ç•Œ 2M/500Mï¼‰
    ============================================================ */
 
-/* ---------------- ½Ó¿Ú ---------------- */
+/* ---------------- æ¥å£ ---------------- */
 void ms5352me_write(uint8_t reg, uint8_t value);
 void ms5352me_Init(void);
 void ms5352me_writePLL(uint8_t baseaddr, const ms5352PLLConfig_t* pll);
 void ms5352me_WriteDivider(uint8_t baseaddr, int32_t P1, int32_t P2, int32_t P3,
                          uint8_t divBy4, uint8_t divBy2, uint8_t rdiv);
 
-/* ºËĞÄ£º°´ drive/freq ×Ô¶¯·ÖÅä PLL Óë DIV0/1/2£¬Ô½½ç¾²Ä¬Ç¯Î»£¬void ½Ó¿Ú£¨ÎŞ·µ»ØÖµ£© */
+/* æ ¸å¿ƒï¼šæŒ‰ drive/freq è‡ªåŠ¨åˆ†é… PLL ä¸ DIV0/1/2ï¼Œè¶Šç•Œé™é»˜é’³ä½ï¼Œvoid æ¥å£ï¼ˆæ— è¿”å›å€¼ï¼‰ */
 void ms5352me_Set(int32_t freq0, uint8_t drive0,
                              int32_t freq1, uint8_t drive1,
                              int32_t freq2, uint8_t drive2);
