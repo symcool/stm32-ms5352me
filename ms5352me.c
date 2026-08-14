@@ -3,29 +3,29 @@
 #include "sys.h"
 #include "rf.h"
 
-/* ================= µ×²ã ================= */
+/* ================= åº•å±‚ ================= */
 
 void ms5352me_write(uint8_t reg, uint8_t value) {
     my_I2C_sendREG(reg, value);
 }
 
-/* MS5352ME ×¨ÓÃ³õÊ¼»¯ */
+/* MS5352ME ä¸“ç”¨åˆå§‹åŒ– */
 void ms5352me_Init(void) {
     ms5352me_write(ms5352me_REGISTER_3_OUTPUT_ENABLE, 0xFF);
     ms5352me_write(ms5352me_REGISTER_16_CLK0_CONTROL, 0x80);
     ms5352me_write(ms5352me_REGISTER_17_CLK1_CONTROL, 0x80);
     ms5352me_write(ms5352me_REGISTER_18_CLK2_CONTROL, 0x80);
     ms5352me_write(ms5352me_REGISTER_183_XTAL_LOAD, 0xC0 | 0x12);
-    /* Reg187 »Ö¸´ÉÏµçÄ¬ÈÏ 0x00£ºCLK1/CLK2 ÒÑÇ¿ÖÆ×ß¸÷×Ô×¨ÊôµÄ DIV1/DIV2£¬
-       ¾ø²»¹²Ïí DIV0£¬¹Ê²»ÔÙĞèÒª MS ÉÈ³ö(MS_FANOUT_EN)Óë XO ÉÈ³ö¡£
-       CLK0 Ö±Ñ¡ DIV0£¬ÉÈ³öÎ»¶ÔÆäÎŞÓ°Ïì£¨Êµ²â CLK0@1M ÔÚÔ­ 0x00 ×´Ì¬ÏÂ¼´Õı³££©¡£ */
+    /* Reg187 æ¢å¤ä¸Šç”µé»˜è®¤ 0x00ï¼šCLK1/CLK2 å·²å¼ºåˆ¶èµ°å„è‡ªä¸“å±çš„ DIV1/DIV2ï¼Œ
+       ç»ä¸å…±äº« DIV0ï¼Œæ•…ä¸å†éœ€è¦ MS æ‰‡å‡º(MS_FANOUT_EN)ä¸ XO æ‰‡å‡ºã€‚
+       CLK0 ç›´é€‰ DIV0ï¼Œæ‰‡å‡ºä½å¯¹å…¶æ— å½±å“ï¼ˆå®æµ‹ CLK0@1M åœ¨åŸ 0x00 çŠ¶æ€ä¸‹å³æ­£å¸¸ï¼‰ã€‚ */
     ms5352me_write(ms5352me_REGISTER_187_FANOUT, 0x00);
 }
 
-/* ================= ¼Ä´æÆ÷Ğ´Èë£¨ĞŞ¸Ä°æÊµÏÖ£© ================= */
+/* ================= å¯„å­˜å™¨å†™å…¥ï¼ˆä¿®æ”¹ç‰ˆå®ç°ï¼‰ ================= */
 
-/* Ğ´ 8 ×Ö½Ú PLL ²ÎÊı£¨Reg26/34£©
- * ÓÉ pll ÅäÖÃ(mult,num,denom)°´ÊÖ²á¹«Ê½Ëã³ö P1/P2/P3 ²¢Í»·¢Ğ´Èë¡£*/
+/* å†™ 8 å­—èŠ‚ PLL å‚æ•°ï¼ˆReg26/34ï¼‰
+ * ç”± pll é…ç½®(mult,num,denom)æŒ‰æ‰‹å†Œå…¬å¼ç®—å‡º P1/P2/P3 å¹¶çªå‘å†™å…¥ã€‚*/
 void ms5352me_writePLL(uint8_t baseaddr, const ms5352PLLConfig_t* pll) {
     int64_t a = pll->mult;
     int64_t b = pll->num;
@@ -43,10 +43,10 @@ void ms5352me_writePLL(uint8_t baseaddr, const ms5352PLLConfig_t* pll) {
     ms5352me_write(baseaddr+7, P2 & 0xFF);
 }
 
-/* Ğ´·ÖÆµÆ÷²ÎÊı£¨DIV0->Reg42 / DIV1->Reg50 / DIV2->Reg58£©
- * rdiv     : Êä³ö¼¶ OUTn_DIV µÄ 2^N Ö¸Êı N£¨D6:4£©
- * divBy4   : DIV0 ±ÈÖµ=4 Ê±µÄ DIVBY4 ±êÖ¾£¨D3:2£©
- * divBy2   : DIV1/DIV2 ¹Ì¶¨ /2 ±êÖ¾£¨D3:2£©*/
+/* å†™åˆ†é¢‘å™¨å‚æ•°ï¼ˆDIV0->Reg42 / DIV1->Reg50 / DIV2->Reg58ï¼‰
+ * rdiv     : è¾“å‡ºçº§ OUTn_DIV çš„ 2^N æŒ‡æ•° Nï¼ˆD6:4ï¼‰
+ * divBy4   : DIV0 æ¯”å€¼=4 æ—¶çš„ DIVBY4 æ ‡å¿—ï¼ˆD3:2ï¼‰
+ * divBy2   : DIV1/DIV2 å›ºå®š /2 æ ‡å¿—ï¼ˆD3:2ï¼‰*/
 void ms5352me_WriteDivider(uint8_t baseaddr, int32_t P1, int32_t P2, int32_t P3,
                          uint8_t divBy4, uint8_t divBy2, uint8_t rdiv) {
     ms5352me_write(baseaddr,   (P3 >> 8) & 0xFF);
@@ -62,9 +62,9 @@ void ms5352me_WriteDivider(uint8_t baseaddr, int32_t P1, int32_t P2, int32_t P3,
     ms5352me_write(baseaddr+7, P2 & 0xFF);
 }
 
-/* DIV0£¨Ğ¡Êı·ÖÆµÆ÷£©²ÎÊı¼ÆËã
- * Ñ¡³öÊä³ö¼¶·ÖÆµ N£¬Ê¹ f_pre=freq*2^N ÂäÔÚ [1MHz,200MHz]£»
- * ÔÙÓÉ VCO(=Fxtal*mult, 500~1000MHz) ·´Ëã DIV0 ±ÈÖµ¡£*/
+/* DIV0ï¼ˆå°æ•°åˆ†é¢‘å™¨ï¼‰å‚æ•°è®¡ç®—
+ * é€‰å‡ºè¾“å‡ºçº§åˆ†é¢‘ Nï¼Œä½¿ f_pre=freq*2^N è½åœ¨ [1MHz,200MHz]ï¼›
+ * å†ç”± VCO(=Fxtal*mult, 500~1000MHz) åç®— DIV0 æ¯”å€¼ã€‚*/
 static void ms5352me_CalcDiv0(int32_t freq, ms5352PLLConfig_t* pll,
                             int32_t* P1, int32_t* P2, int32_t* P3,
                             uint8_t* divBy4, uint8_t* rdiv, uint8_t* isInt) {
@@ -92,7 +92,7 @@ static void ms5352me_CalcDiv0(int32_t freq, ms5352PLLConfig_t* pll,
         *P2 = 0;
         *P3 = 1;
         *divBy4 = (x == 4) ? 0x3 : 0;
-        *isInt = 1;          // ·ÖÆµ±È=x(ÕûÊı) -> ¿ÉÕûÊıÄ£Ê½
+        *isInt = 1;          // åˆ†é¢‘æ¯”=x(æ•´æ•°) -> å¯æ•´æ•°æ¨¡å¼
     } else {
         int32_t x = Fpll / fpre;
         int32_t t = (fpre >> 20) + 1;
@@ -106,8 +106,8 @@ static void ms5352me_CalcDiv0(int32_t freq, ms5352PLLConfig_t* pll,
         *P3 = z;
         *divBy4 = 0;
         if (y == 0) {
-            /* ·ÖÆµ±È x Ç¡ºÃÎªÕûÊı£ºÕûÊıÄ£Ê½ÏÂ P3 ±ØĞë=1£¨AN619 Ó²ĞÔÒªÇó£©¡£
-               ·ñÔò²¿·ÖĞ¾Æ¬ÔÚ INT=1 Ê±»áÎóÅĞ·ÖÆµ±È -> Ê§Ëø/ÎŞÊä³ö¡£ */
+            /* åˆ†é¢‘æ¯” x æ°å¥½ä¸ºæ•´æ•°ï¼šæ•´æ•°æ¨¡å¼ä¸‹ P3 å¿…é¡»=1ï¼ˆAN619 ç¡¬æ€§è¦æ±‚ï¼‰ã€‚
+               å¦åˆ™éƒ¨åˆ†èŠ¯ç‰‡åœ¨ INT=1 æ—¶ä¼šè¯¯åˆ¤åˆ†é¢‘æ¯” -> å¤±é”/æ— è¾“å‡ºã€‚ */
             *P1 = 128 * x - 512;
             *P2 = 0;
             *P3 = 1;
@@ -119,8 +119,8 @@ static void ms5352me_CalcDiv0(int32_t freq, ms5352PLLConfig_t* pll,
     *rdiv = n;
 }
 
-/* DIV1/DIV2£¨¹Ì¶¨ /2 ÕûÊı·ÖÆµÆ÷£©²ÎÊı¼ÆËã
- * VCO = 2*freq*2^N£¬Ñ¡ N Ê¹ VCO ÂäÔÚ 500~1000MHz¡£*/
+/* DIV1/DIV2ï¼ˆå›ºå®š /2 æ•´æ•°åˆ†é¢‘å™¨ï¼‰å‚æ•°è®¡ç®—
+ * VCO = 2*freq*2^Nï¼Œé€‰ N ä½¿ VCO è½åœ¨ 500~1000MHzã€‚*/
 static void ms5352me_CalcDiv2(int32_t freq, ms5352PLLConfig_t* pll, uint8_t* rdiv) {
     uint8_t n = 0;
     int64_t vco = (int64_t)2 * freq;
@@ -134,33 +134,33 @@ static void ms5352me_CalcDiv2(int32_t freq, ms5352PLLConfig_t* pll, uint8_t* rdi
     *rdiv = n;
 }
 
-/* Ğ´Ä³Â·Êä³ö¿ØÖÆ¼Ä´æÆ÷£¨Reg16/17/18£©
- * divPdn : ¸ÃÊä³ö"×¨Êô·ÖÆµÆ÷"(CLK0->DIV0, CLK1->DIV1, CLK2->DIV2)ÊÇ·ñµôµç¡£*/
+/* å†™æŸè·¯è¾“å‡ºæ§åˆ¶å¯„å­˜å™¨ï¼ˆReg16/17/18ï¼‰
+ * divPdn : è¯¥è¾“å‡º"ä¸“å±åˆ†é¢‘å™¨"(CLK0->DIV0, CLK1->DIV1, CLK2->DIV2)æ˜¯å¦æ‰ç”µã€‚*/
 static void ms5352me_WriteClkControl(uint8_t output, uint8_t div, uint8_t pll,
                                    uint8_t drive, uint8_t intMode, uint8_t divPdn) {
     uint8_t reg = 16 + output;
     uint8_t ctrl = 0;
-    ctrl |= (divPdn & 0x01) << 7;          // D7 : ×¨Êô·ÖÆµÆ÷µôµç
+    ctrl |= (divPdn & 0x01) << 7;          // D7 : ä¸“å±åˆ†é¢‘å™¨æ‰ç”µ
     ctrl |= (pll    & 0x01) << 5;          // D5 : DIVn_SRC
     ctrl |= (intMode & 0x01) << 6;         // D6 : INT
-    if (output == 0) ctrl |= 0x03 << 2;    // CLK0 Ö»ÄÜÑ¡ DIV0
+    if (output == 0) ctrl |= 0x03 << 2;    // CLK0 åªèƒ½é€‰ DIV0
     else              ctrl |= (div == 0) ? (0x02 << 2) : (0x03 << 2);
-    ctrl |= (drive & 0x03);                 // D1:0 : Çı¶¯ÄÜÁ¦
+    ctrl |= (drive & 0x03);                 // D1:0 : é©±åŠ¨èƒ½åŠ›
     ms5352me_write(reg, ctrl);
 }
 
-/* ºËĞÄ£ºÆµÂÊÉèÖÃÓë PLL/DIV ·ÖÅä£¨ĞŞ¸Ä°æ£©
- * ×ÊÔ´Ô¼Êø£¨Êı¾İÊÖ²á 2.5/2.6£©£º
- *   - CLK0 Ö»ÄÜ DIV0£¨Ğ¡Êı£¬2.5kHz~200MHz£©£¬PLL ¹Ì¶¨ A¡£
- *   - CLK1 Ö»ÄÜ DIV1£¨¹Ì¶¨/2£¬2MHz~500MHz£©£¬CLK2 Ö»ÄÜ DIV2£¨¹Ì¶¨/2£¬2MHz~500MHz£©¡£
- *   - ÒÑ³¹µ×ÆúÓÃ"CLK1/CLK2 ¹²Ïí DIV0"µÄÉÈ³öÂ·¾¶£ºÊµ²âÖĞ¸ÃÂ·¾¶Ê¼ÖÕÎŞ·¨³ö²¨
- *     £¨ÉÈ³öÊ¹ÄÜ / ÕûÊıÄ£Ê½ / Êä³öµôµçÎ»ÈÎÒ»Ìõ¼ş²»Âú×ã¼´ÎŞÊä³ö£©£¬¹ÊÇ¿ÖÆ CLK1/CLK2
- *     ×ß¸÷×Ô×¨ÊôµÄ DIV1/DIV2£¬¼Ü¹¹¼òµ¥¡¢Ò»´ÎĞ´Í¨¼´¿ÉÎÈ¶¨³ö²¨¡£
- *   - Òò´Ë CLK1/CLK2 ÏÂÏŞÎª 2MHz£¨DIV1/DIV2 Ó²¼ş·¶Î§£©£¬µÍÓÚ 2MHz ÓÉÏÂ·½Í³Ò»Ç¯Î»µ½ 2MHz¡£
- *   - ½ö 2 ¸ö PLL¡¢3 Â·¸÷×Ô¶ÀÁ¢ MS£ºCLK0 ÓÃ PLLA£»CLK1/CLK2 ÔÚ CLK0 ÔÚ³¡Ê±½è PLLB£¬
- *     ÈıÕßÍ¬³¡ÇÒ CLK1/CLK2 ÆµÂÊ²»Í¬Ê±£¬ÒòĞè¹²ÏíÍ¬Ò» PLLB µÄ VCO ¶øÖ»ÄÜÍ¬Æµ ¡ª¡ª
- *     **Ç¿ÖÆ CLK1/CLK2 ¹²ÓÃÒ»¸öÆµÂÊ**£¨¼ûº¯ÊıÄÚÇ¿ÖÆÍ¬Æµ¶Î£©£¬±£Ö¤Ò»¶¨³ö²¨¡£
- * Ô½½çÆµÂÊÒ»ÂÉ¾²Ä¬Ç¯Î»µ½Ó²¼ş±ß½ç²¢ÕÕ³£ÅäÖÃ£»±¾º¯ÊıÎª void ½Ó¿Ú£¬²»·µ»ØÈÎºÎ×´Ì¬¡£*/
+/* æ ¸å¿ƒï¼šé¢‘ç‡è®¾ç½®ä¸ PLL/DIV åˆ†é…ï¼ˆä¿®æ”¹ç‰ˆï¼‰
+ * èµ„æºçº¦æŸï¼ˆæ•°æ®æ‰‹å†Œ 2.5/2.6ï¼‰ï¼š
+ *   - CLK0 åªèƒ½ DIV0ï¼ˆå°æ•°ï¼Œ2.5kHz~200MHzï¼‰ï¼ŒPLL å›ºå®š Aã€‚
+ *   - CLK1 åªèƒ½ DIV1ï¼ˆå›ºå®š/2ï¼Œ2MHz~500MHzï¼‰ï¼ŒCLK2 åªèƒ½ DIV2ï¼ˆå›ºå®š/2ï¼Œ2MHz~500MHzï¼‰ã€‚
+ *   - å·²å½»åº•å¼ƒç”¨"CLK1/CLK2 å…±äº« DIV0"çš„æ‰‡å‡ºè·¯å¾„ï¼šå®æµ‹ä¸­è¯¥è·¯å¾„å§‹ç»ˆæ— æ³•å‡ºæ³¢
+ *     ï¼ˆæ‰‡å‡ºä½¿èƒ½ / æ•´æ•°æ¨¡å¼ / è¾“å‡ºæ‰ç”µä½ä»»ä¸€æ¡ä»¶ä¸æ»¡è¶³å³æ— è¾“å‡ºï¼‰ï¼Œæ•…å¼ºåˆ¶ CLK1/CLK2
+ *     èµ°å„è‡ªä¸“å±çš„ DIV1/DIV2ï¼Œæ¶æ„ç®€å•ã€ä¸€æ¬¡å†™é€šå³å¯ç¨³å®šå‡ºæ³¢ã€‚
+ *   - å› æ­¤ CLK1/CLK2 ä¸‹é™ä¸º 2MHzï¼ˆDIV1/DIV2 ç¡¬ä»¶èŒƒå›´ï¼‰ï¼Œä½äº 2MHz ç”±ä¸‹æ–¹ç»Ÿä¸€é’³ä½åˆ° 2MHzã€‚
+ *   - ä»… 2 ä¸ª PLLã€3 è·¯å„è‡ªç‹¬ç«‹ MSï¼šCLK0 ç”¨ PLLAï¼›CLK1/CLK2 åœ¨ CLK0 åœ¨åœºæ—¶å€Ÿ PLLBï¼Œ
+ *     ä¸‰è€…åŒåœºä¸” CLK1/CLK2 é¢‘ç‡ä¸åŒæ—¶ï¼Œå› éœ€å…±äº«åŒä¸€ PLLB çš„ VCO è€Œåªèƒ½åŒé¢‘ â€”â€”
+ *     **å¼ºåˆ¶ CLK1/CLK2 å…±ç”¨ä¸€ä¸ªé¢‘ç‡**ï¼ˆè§å‡½æ•°å†…å¼ºåˆ¶åŒé¢‘æ®µï¼‰ï¼Œä¿è¯ä¸€å®šå‡ºæ³¢ã€‚
+ * è¶Šç•Œé¢‘ç‡ä¸€å¾‹é™é»˜é’³ä½åˆ°ç¡¬ä»¶è¾¹ç•Œå¹¶ç…§å¸¸é…ç½®ï¼›æœ¬å‡½æ•°ä¸º void æ¥å£ï¼Œä¸è¿”å›ä»»ä½•çŠ¶æ€ã€‚*/
 void ms5352me_Set(int32_t freq0, uint8_t drive0,
                             int32_t freq1, uint8_t drive1,
                             int32_t freq2, uint8_t drive2) {
@@ -174,14 +174,18 @@ void ms5352me_Set(int32_t freq0, uint8_t drive0,
     if (sd1 > 3) sd1 = 3;
     if (sd2 > 3) sd2 = 3;
 
-    /* CLK0£ºDIV0£¬·¶Î§ 2.5kHz~200MHz£¬Ç¯Î»´¦Àí */
+    /* CLK0ï¼šDIV0ï¼ŒèŒƒå›´ 8kHz~200MHzï¼ˆç®—æ³•å®é™…å¯ç²¾ç¡®è¦†ç›–çš„ä¸‹é™ 8kHzï¼Œ
+       ä¸ MS5351M ä¸€è‡´ï¼›ä½äº 8kHz åˆ†é¢‘æ¯”ä¼šè¶… 1800 éæ³•ï¼‰ï¼Œé’³ä½å¤„ç† */
     int32_t f0 = freq0;
-    if (en0 && f0 > MS5352ME_MAX_FREQ_CLK0) { f0 = MS5352ME_MAX_FREQ_CLK0; }
+    if (en0) {
+        if (f0 < MS5352ME_MIN_FREQ_CLK0)        f0 = MS5352ME_MIN_FREQ_CLK0;
+        else if (f0 > MS5352ME_MAX_FREQ_CLK0)   f0 = MS5352ME_MAX_FREQ_CLK0;
+    }
 
-    /* CLK1/CLK2£ºÖ»ÄÜÓÃ DIV1/DIV2£¨2MHz~500MHz£©£¬¾ø²»¹²Ïí DIV0¡£
-       ³¬³öÓ²¼ş±ß½çµÄÆµÂÊÖ±½ÓÇ¯Î»µ½×î½ü±ß½ç£¨ÏÂÏŞ 2MHz / ÉÏÏŞ 500MHz£©£¬
-       ²»±¨´í¡¢²»µ±ÌØÊâÇé¿ö£¬Óë CLK0 ³¬ 200MHz Ç¯Î»µ½ 200MHz µÄ´¦ÀíÍêÈ«Ò»ÖÂ¡£
-       Ô½½çÊ±Ö±½ÓÇ¯Î»£¬ÕÕ³£Íê³ÉÅäÖÃ£¬±£Ö¤"Ò»¶¨³ö²¨"£¨±¾º¯ÊıÎª void ½Ó¿Ú£¬ÎŞ·µ»ØÖµ£©¡£ */
+    /* CLK1/CLK2ï¼šåªèƒ½ç”¨ DIV1/DIV2ï¼ˆ2MHz~500MHzï¼‰ï¼Œç»ä¸å…±äº« DIV0ã€‚
+       è¶…å‡ºç¡¬ä»¶è¾¹ç•Œçš„é¢‘ç‡ç›´æ¥é’³ä½åˆ°æœ€è¿‘è¾¹ç•Œï¼ˆä¸‹é™ 2MHz / ä¸Šé™ 500MHzï¼‰ï¼Œ
+       ä¸æŠ¥é”™ã€ä¸å½“ç‰¹æ®Šæƒ…å†µï¼Œä¸ CLK0 è¶… 200MHz é’³ä½åˆ° 200MHz çš„å¤„ç†å®Œå…¨ä¸€è‡´ã€‚
+       è¶Šç•Œæ—¶ç›´æ¥é’³ä½ï¼Œç…§å¸¸å®Œæˆé…ç½®ï¼Œä¿è¯"ä¸€å®šå‡ºæ³¢"ï¼ˆæœ¬å‡½æ•°ä¸º void æ¥å£ï¼Œæ— è¿”å›å€¼ï¼‰ã€‚ */
     int32_t f1 = freq1;
     int32_t f2 = freq2;
     if (en1) {
@@ -193,25 +197,25 @@ void ms5352me_Set(int32_t freq0, uint8_t drive0,
         else if (f2 > MS5352ME_MAX_FREQ_CLK12)  f2 = MS5352ME_MAX_FREQ_CLK12;
     }
 
-    /* PLL ·ÖÅä£¨½ö 2 ¸ö PLL£¬3 Â·¸÷×Ô¶ÀÁ¢ MS£©
-       CLK0 -> PLLA£»CLK1 -> ÓĞ CLK0 ÔÚ³¡½è PLLB ·ñÔò PLLA£»
-       CLK2 -> ÓĞ CLK0 ÔÚ³¡½è PLLB£¬·ñÔòÓĞ CLK1 ½è PLLB£¬·ñÔò PLLA¡£ */
+    /* PLL åˆ†é…ï¼ˆä»… 2 ä¸ª PLLï¼Œ3 è·¯å„è‡ªç‹¬ç«‹ MSï¼‰
+       CLK0 -> PLLAï¼›CLK1 -> æœ‰ CLK0 åœ¨åœºå€Ÿ PLLB å¦åˆ™ PLLAï¼›
+       CLK2 -> æœ‰ CLK0 åœ¨åœºå€Ÿ PLLBï¼Œå¦åˆ™æœ‰ CLK1 å€Ÿ PLLBï¼Œå¦åˆ™ PLLAã€‚ */
     uint8_t pll1 = en0 ? (uint8_t)ms5352me_PLL_B : (uint8_t)ms5352me_PLL_A;
     uint8_t pll2 = en0 ? (uint8_t)ms5352me_PLL_B
                        : (en1 ? (uint8_t)ms5352me_PLL_B : (uint8_t)ms5352me_PLL_A);
 
-    /* CLK0 ÔÚ³¡ÇÒ CLK1/CLK2 ¾ùÊ¹ÄÜ -> ¶şÕß±ØĞë¹²ÏíÍ¬Ò» PLLB µÄ /2 ·ÖÆµÆ÷£¬Ö»ÄÜÍ¬Æµ¡£
-       **Ç¿ÖÆ CLK1/CLK2 ¹²ÓÃÒ»¸öÆµÂÊ**£º
-         - Èô¶şÕßÖĞ´æÔÚ"ÓĞĞ§ÆµÂÊ"£¨Ê¹ÄÜÇÒÂäÔÚ [2M,500M]£©£¬È¡¸ÃÆµÂÊ£¨ÓÅÏÈ CLK1£©£»
-         - Èô¶şÕß¶¼"ÎŞĞ§"£¨¾ùÎ´Ê¹ÄÜºÏ·¨ÆµÂÊ£©£¬È¡ CLK1 Ëù½Ó½üµÄ±ß½ç£¨<=2M -> 2M£»>=500M -> 500M£©¡£
-       Ç¯Î»ºóµÄ f1/f2 Ö±½Ó±»¸²Ğ´Îª fcommon£¬ÕÕ³£Íê³ÉÅäÖÃ£¬±£Ö¤Ò»¶¨³ö²¨¡£ */
+    /* CLK0 åœ¨åœºä¸” CLK1/CLK2 å‡ä½¿èƒ½ -> äºŒè€…å¿…é¡»å…±äº«åŒä¸€ PLLB çš„ /2 åˆ†é¢‘å™¨ï¼Œåªèƒ½åŒé¢‘ã€‚
+       **å¼ºåˆ¶ CLK1/CLK2 å…±ç”¨ä¸€ä¸ªé¢‘ç‡**ï¼š
+         - è‹¥äºŒè€…ä¸­å­˜åœ¨"æœ‰æ•ˆé¢‘ç‡"ï¼ˆä½¿èƒ½ä¸”è½åœ¨ [2M,500M]ï¼‰ï¼Œå–è¯¥é¢‘ç‡ï¼ˆä¼˜å…ˆ CLK1ï¼‰ï¼›
+         - è‹¥äºŒè€…éƒ½"æ— æ•ˆ"ï¼ˆå‡æœªä½¿èƒ½åˆæ³•é¢‘ç‡ï¼‰ï¼Œå– CLK1 æ‰€æ¥è¿‘çš„è¾¹ç•Œï¼ˆ<=2M -> 2Mï¼›>=500M -> 500Mï¼‰ã€‚
+       é’³ä½åçš„ f1/f2 ç›´æ¥è¢«è¦†å†™ä¸º fcommonï¼Œç…§å¸¸å®Œæˆé…ç½®ï¼Œä¿è¯ä¸€å®šå‡ºæ³¢ã€‚ */
     if (en0 && en1 && en2) {
         int32_t fcommon;
         int c1_in = (freq1 >= 2000000) && (freq1 <= MS5352ME_MAX_FREQ_CLK12);
         int c2_in = (freq2 >= 2000000) && (freq2 <= MS5352ME_MAX_FREQ_CLK12);
-        if (c1_in)                                fcommon = f1;   // ÓÅÏÈ CLK1 ÓĞĞ§ÆµÂÊ
-        else if (c2_in)                           fcommon = f2;   // ·ñÔò CLK2 ÓĞĞ§ÆµÂÊ
-        else {                                                  // ¶¼ÎŞĞ§£ºÈ¡ CLK1 ×î½ü±ß½ç
+        if (c1_in)                                fcommon = f1;   // ä¼˜å…ˆ CLK1 æœ‰æ•ˆé¢‘ç‡
+        else if (c2_in)                           fcommon = f2;   // å¦åˆ™ CLK2 æœ‰æ•ˆé¢‘ç‡
+        else {                                                  // éƒ½æ— æ•ˆï¼šå– CLK1 æœ€è¿‘è¾¹ç•Œ
             if (freq1 >= MS5352ME_MAX_FREQ_CLK12) fcommon = MS5352ME_MAX_FREQ_CLK12;
             else                                  fcommon = 2000000;
         }
@@ -221,10 +225,10 @@ void ms5352me_Set(int32_t freq0, uint8_t drive0,
         f2 = fcommon;
     }
 
-    /* ================= Ğ´¼Ä´æÆ÷ ================= */
+    /* ================= å†™å¯„å­˜å™¨ ================= */
     uint8_t usedPllA = 0, usedPllB = 0;
 
-    /* CLK0 -> DIV0£¨PLLA£© */
+    /* CLK0 -> DIV0ï¼ˆPLLAï¼‰ */
     if (en0) {
         ms5352PLLConfig_t pll0;
         int32_t P1=0,P2=0,P3=1; uint8_t divBy4=0, rdiv0=0, isInt=0;
@@ -237,7 +241,7 @@ void ms5352me_Set(int32_t freq0, uint8_t drive0,
         ms5352me_write(ms5352me_REGISTER_16_CLK0_CONTROL, 0x80);
     }
 
-    /* CLK1 -> DIV1£¨¹Ì¶¨/2£¬PLL ¼û·ÖÅä£© */
+    /* CLK1 -> DIV1ï¼ˆå›ºå®š/2ï¼ŒPLL è§åˆ†é…ï¼‰ */
     if (en1) {
         ms5352PLLConfig_t pll1cfg; uint8_t rdiv1 = 0;
         ms5352me_CalcDiv2(f1, &pll1cfg, &rdiv1);
@@ -250,7 +254,7 @@ void ms5352me_Set(int32_t freq0, uint8_t drive0,
         ms5352me_write(ms5352me_REGISTER_17_CLK1_CONTROL, 0x80);
     }
 
-    /* CLK2 -> DIV2£¨¹Ì¶¨/2£¬PLL ¼û·ÖÅä£© */
+    /* CLK2 -> DIV2ï¼ˆå›ºå®š/2ï¼ŒPLL è§åˆ†é…ï¼‰ */
     if (en2) {
         ms5352PLLConfig_t pll2cfg; uint8_t rdiv2 = 0;
         ms5352me_CalcDiv2(f2, &pll2cfg, &rdiv2);
@@ -271,5 +275,5 @@ void ms5352me_Set(int32_t freq0, uint8_t drive0,
     if (usedPllB) rst |= 0x80;
     ms5352me_write(ms5352me_REGISTER_177_PLL_RESET, rst);
 
-    /* Ô½½ç¾²Ä¬Ç¯Î»£¬ÕÕ³£ÅäÖÃ£¬ÎŞ·µ»ØÖµ */
+    /* è¶Šç•Œé™é»˜é’³ä½ï¼Œç…§å¸¸é…ç½®ï¼Œæ— è¿”å›å€¼ */
 }
