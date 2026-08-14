@@ -1,7 +1,5 @@
 # MS5352ME 时钟发生器驱动（软件 I2C）
 
-<img width="1169" height="809" alt="image" src="https://github.com/user-attachments/assets/4542635b-1535-43af-8403-cd8e728d7239" />
-
 MS5352ME（Si5351A 兼容）三路时钟发生器驱动，基于 STM32 HAL + 软件 I2C。
 驱动按硬件规格自动分配 PLL 与分频器，越界频率静默钳位，`void` 接口无返回值。
 
@@ -11,7 +9,7 @@ MS5352ME（Si5351A 兼容）三路时钟发生器驱动，基于 STM32 HAL + 软
 |---|---|
 | 晶振 | 25MHz 有源晶振（`MS5352ME_XTAL_FREQ`） |
 | VCO 范围 | 硬范围 500 ~ 1000MHz；推荐 600 ~ 900MHz |
-| CLK0 | 2.5kHz ~ 200MHz（DIV0 小数分频器） |
+| CLK0 | 8kHz ~ 200MHz（DIV0 小数分频器） |
 | CLK1/CLK2 | 2MHz ~ 500MHz（DIV1/DIV2 **固定 /2** 分频器） |
 | DIV0 分频比 | 仅 {4,6,8} 或 [8,1800] |
 | >150MHz | 强制 DIVBY4 + INT=1 |
@@ -19,6 +17,9 @@ MS5352ME（Si5351A 兼容）三路时钟发生器驱动，基于 STM32 HAL + 软
 
 > **与 MS5351 的本质区别**：MS5352ME 的 DIV1/DIV2 是**固定 /2 整数分频器**（非小数分频器），
 > 因此 CLK1/CLK2 只能输出 ≥2MHz，且共享 PLL 时**必须同频**（见下方组合限制）。
+>
+> **CLK0 下限说明**：芯片手册宣称 CLK0 最低 2.5kHz，但驱动放大算法（2^n，n≤7）受 DIV0 分频比 ≤1800
+> 约束，实际可精确覆盖下限为 **8kHz**（与 MS5351M 一致），低于 8kHz 的输入会被钳位到 8kHz。
 
 ## 文件说明
 
@@ -43,7 +44,7 @@ int main(void) {
 ```
 
 - `freq`：期望频率（Hz），越界自动钳位，**不会报错、照常配置出波**
-  - CLK0：>200MHz → 钳到 200MHz
+  - CLK0：<8kHz → 钳到 8kHz；>200MHz → 钳到 200MHz
   - CLK1/CLK2：<2MHz → 钳到 2MHz；>500MHz → 钳到 500MHz
 - `drive`：驱动强度档位 1~4（`0` = 该路关闭）；`freq=0` 该路也视为关闭
 - 配置后 PLL 需要重新锁定，建议等待 ≥10ms 再量波
